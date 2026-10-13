@@ -1,0 +1,1 @@
+ALTER TABLE `encounters` ADD `share_name` integer DEFAULT 0 NOT NULL;

@@ -1,2 +1,18 @@
-.DS_Store
 .local/
+firmware/build/
+firmware/managed_components/
+firmware/sdkconfig
+firmware/sdkconfig.old
+.DS_Store
+__pycache__/
+
+# Local renders, generated output, and machine-specific files
+*.ppm
+.env
+.env.*
+!.env.example
+node_modules/
+**/.wrangler/
+**/dist/
+*.sqlite3
+*.sqlite3-*

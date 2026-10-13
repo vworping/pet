@@ -4,7 +4,7 @@
 
 [Explore the interactive OS preview →](https://mindofaxd.com/pet)
 
-![PET OS home screen](website/assets/pet-os.png)
+![PET OS home screen](docs/images/pet-os.png)
 
 ## The idea
 
@@ -20,11 +20,11 @@ PET firmware is flashed to the board's **onboard memory over USB**. You do not n
 
 These commands follow the project's **macOS** tooling. You'll need the Waveshare ESP32-S3-Touch-LCD-5B, a USB data cable, Git, Python 3.12 or 3.13, CMake, Ninja, and dfu-util. See [Espressif's macOS prerequisites](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32s3/get-started/linux-macos-setup.html) if you're setting up a new machine.
 
-### 1. Prepare the source and tools
-
-This first-pass repository contains the project page and guide. A public firmware source download has not been added yet. The commands below are for builders who already have the PET firmware project; run them from that project folder.
+### 1. Get the source and install the tools
 
 ```sh
+git clone https://github.com/vworping/pet.git
+cd pet
 brew install cmake ninja dfu-util python@3.13
 ./scripts/setup.sh
 ```
@@ -57,7 +57,7 @@ This replaces the firmware currently on the board. Leave the USB cable connected
 
 Look for the PET home screen on the display and startup messages in the monitor. Exit the monitor with **Ctrl + ]**. Configure Wi-Fi through **Settings → Wi-Fi** on the badge.
 
-**Live Hello requires separate service provisioning.** Flashing firmware doesn't install a hosted service or configure a device key. NFC also requires the compatible reader and supported tags. Service provisioning and full hardware documentation will be added with the source release.
+**Live Hello requires separate service provisioning.** Flashing firmware doesn't install a hosted service or configure a device key. See [Public Hello setup](docs/PUBLIC-HELLO.md) and the [hosted service guide](cards/hosted/README.md). NFC also requires the compatible reader and supported tags; see [NFC hardware notes](docs/NFC-HARDWARE.md).
 
 ### Troubleshooting
 
@@ -76,8 +76,14 @@ Look for the PET home screen on the display and startup messages in the monitor.
 
 Coming later: enclosure files, print settings, and assembly notes. This first pass focuses on the OS preview and getting the badge running.
 
-## Website
+## Project notes
 
-The landing page is built with plain HTML, CSS, and JavaScript. See [editing and GitHub Pages setup](docs/WEBSITE.md). The website’s bundled font licenses are in `website/assets/licenses/`.
+- [Wi-Fi and eduroam setup](docs/WIFI.md)
+- [Public Hello setup, provisioning, and verification](docs/PUBLIC-HELLO.md)
+- [Hosted service](cards/hosted/README.md)
+- [NFC hardware history](docs/NFC-HARDWARE.md)
+- [Third-party sources and licenses](docs/THIRD_PARTY.md)
 
-Firmware downloads, service setup details, and enclosure documentation are planned for a later pass.
+Current limits: the UMB eduroam profile still needs an on-campus connection test; the automatic blank-sticker flow still needs a physical card interaction check. No verified battery-voltage input is available. The latest Hello UI changes have native/browser checks but have not yet had a full device build and physical flash; see the dated verification notes above.
+
+No project-wide software license has been selected; third-party licenses remain applicable.
