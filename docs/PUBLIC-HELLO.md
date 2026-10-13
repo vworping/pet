@@ -18,8 +18,9 @@ unbroken matrix and a quiet border, without text over the code.
 Native tests cover loading continuity, all Hello/NFC states, long guest text,
 and 100 navigation transitions. Browser checks cover the simplified flow,
 single-line system labels, original OS fonts, and mobile screen bounds.
-The temporary ESP-IDF SDK is absent, so a full device build and physical flash
-remain unverified. Native rendering and the portfolio build were verified.
+At the time of the UI change, the temporary SDK was absent. The current
+6.20261013.1 firmware has since passed a full ESP-IDF build; see
+[release verification](RELEASE-6.20261013.1.md) for hardware and publication results.
 
 ## Interactive OS preview parity — 2026-10-07
 
@@ -168,7 +169,7 @@ Serial diagnostics: `pet-status`, `pet-wifi-scan`, `pet-hello`, `pet-cancel`, `p
 
 Wi-Fi retries continue after the initial attempts. Scanning an unreachable saved network now pauses reconnection, performs the scan, then resumes reconnecting. The recabled board returned 10 network entries in `.local/public-hello-wifi-scan.log`.
 
-Enterprise/eduroam username, EAP method and certificate provisioning are not yet implemented. Do not treat password-only settings as enterprise support. A working ordinary/open network and internet access are required. HTTPS checks the certificate bundle and waits for SNTP clock synchronization. The guest phone never needs to join PET's network.
+The UMB eduroam profile supports username/password login with certificate-chain and server-domain checks. See [Wi-Fi setup](WIFI.md) for supported networks and venue limitations. Hello uses HTTPS with the certificate bundle; SNTP is no longer a prerequisite in the default SDK configuration, which does not enable certificate-date checks. Builds that enable date validation still wait for time synchronization. The guest phone never needs to join PET's network.
 
 ## Verification
 

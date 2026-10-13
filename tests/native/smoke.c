@@ -107,6 +107,7 @@ static void check_bounds(lv_obj_t *o){
  if(lv_obj_get_scroll_dir(o)==LV_DIR_VER&&lv_obj_has_flag(o,LV_OBJ_FLAG_SCROLLABLE))return;
  for(unsigned i=0;i<lv_obj_get_child_cnt(o);i++)check_bounds(lv_obj_get_child(o,i));
 }
+extern void test_service_status(const char *text);
 int main(void){
  lv_init();static lv_disp_draw_buf_t b;lv_disp_draw_buf_init(&b,draw,NULL,1024*40);
  static lv_disp_drv_t d;lv_disp_drv_init(&d);d.hor_res=1024;d.ver_res=600;d.draw_buf=&b;d.flush_cb=flush;lv_disp_drv_register(&d);
@@ -136,7 +137,7 @@ int main(void){
  lv_textarea_set_text(user,"student@school.edu");lv_textarea_set_text(pass,"test-secret");
  click(LV_SYMBOL_EYE_OPEN);assert(!lv_textarea_get_password_mode(pass));assert(!strcmp(lv_textarea_get_text(pass),"test-secret"));click(LV_SYMBOL_EYE_CLOSE);assert(lv_textarea_get_password_mode(pass));
  click("Username + password");assert(lv_obj_has_flag(user,LV_OBJ_FLAG_HIDDEN));click("Password only");assert(!lv_obj_has_flag(user,LV_OBJ_FLAG_HIDDEN));assert(!strcmp(lv_textarea_get_text(user),"student@school.edu"));shot("wifi-enterprise.ppm");
- click("Connect");tick(500);lv_obj_t *active=lv_obj_get_parent(find(lv_scr_act(),"eduroam"));assert(lv_obj_get_y(active)==228);assert(lv_obj_get_style_bg_color(active,0).full==lv_color_hex(0xbfd6b8).full);assert(find(lv_scr_act(),"Manage >"));check_bounds(lv_scr_act());shot("wifi-connected.ppm");
+ click("Connect");tick(500);lv_obj_t *active=lv_obj_get_parent(find(lv_scr_act(),"eduroam"));assert(lv_obj_get_y(active)==228);assert(lv_obj_get_style_bg_color(active,0).full==lv_color_hex(0xbfd6b8).full);assert(find(lv_scr_act(),"Manage >"));check_bounds(lv_scr_act());shot("wifi-connected.ppm");test_service_status("Hello unreachable. Check venue sign-in or use a hotspot.");tick(500);assert(find(lv_scr_act(),"Hello unreachable. Check venue sign-in or use a hotspot."));check_bounds(lv_scr_act());shot("wifi-service-unreachable.ppm");test_service_status("Hello service online.");tick(500);assert(find(lv_scr_act(),"Hello service online."));
  click("eduroam");assert(find(lv_scr_act(),"Forget this network"));check_bounds(lv_scr_act());shot("wifi-details.ppm");click("< Back");pet_services_snapshot(&status);assert(status.wifi_connected);click("eduroam");click("Forget this network");tick(500);pet_services_snapshot(&status);assert(!status.wifi_connected&&!status.ssid[0]);
  click("Manual entry");for(unsigned i=0;i<lv_obj_get_child_cnt(lv_scr_act());i++){lv_obj_t *o=lv_obj_get_child(lv_scr_act(),i);if(lv_obj_check_type(o,&lv_textarea_class))assert(!lv_textarea_get_text(o)[0]);}click("< Back");click("< Back");assert(find(lv_scr_act(),"Settings"));
  lv_obj_t *slider=NULL;for(unsigned i=0;i<lv_obj_get_child_cnt(lv_scr_act());i++){lv_obj_t *child=lv_obj_get_child(lv_scr_act(),i);if(lv_obj_check_type(child,&lv_slider_class))slider=child;}assert(slider);

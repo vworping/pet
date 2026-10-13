@@ -74,13 +74,20 @@ static void reset(void){
  strcpy(saved.pending[0].event,"22222222222222222222222222222222");
 }
 int main(void){
+#ifdef CONFIG_MBEDTLS_HAVE_TIME_DATE
+ const bool clock_optional=false;
+#else
+ const bool clock_optional=true;
+#endif
  clock_time=0;assert(!prepare_clock(false,1000000)&&!sntp_starts);
- assert(!prepare_clock(true,1000000)&&sntp_starts==1&&sntp_servers==1);
- assert(!prepare_clock(true,2000000)&&!sntp_restarts);
- assert(!prepare_clock(true,9000000)&&sntp_restarts==1&&sntp_servers==2);
- assert(!prepare_clock(false,10000000));assert(!prepare_clock(true,11000000)&&sntp_restarts==2);
+ assert(prepare_clock(true,1000000)==clock_optional&&sntp_starts==1&&sntp_servers==1);
+ assert(prepare_clock(true,2000000)==clock_optional&&!sntp_restarts);
+ assert(prepare_clock(true,9000000)==clock_optional&&sntp_restarts==1&&sntp_servers==2);
+ assert(!prepare_clock(false,10000000));assert(prepare_clock(true,11000000)==clock_optional&&sntp_restarts==2);
  clock_time=1700000000;assert(prepare_clock(true,19000000)&&sntp_servers==3);
- reset();saved.encounter[0]=0;clock_time=0;pet_cloud_start();run();assert(!creates&&view.hello_starting&&view.hello_stage==PET_HELLO_CLOCK);
+ reset();saved.encounter[0]=0;clock_time=0;pet_cloud_start();run();
+ if(clock_optional)assert(creates==1&&view.hello_active&&view.hello_stage==PET_HELLO_READY);
+ else assert(!creates&&view.hello_starting&&view.hello_stage==PET_HELLO_CLOCK);
  clock_time=1700000000;poll_at=99999999;run();assert(creates==1&&view.hello_active&&view.hello_stage==PET_HELLO_READY);
  reset();pet_cloud_cancel();pet_cloud_start();run();
  assert(creates==1&&!closes&&!assigns&&view.hello_active&&!view.hello_starting);
@@ -101,7 +108,8 @@ with tempfile.TemporaryDirectory() as directory:
     test = Path(directory) / 'scheduling.c'
     test.write_text(prefix + state + http + worker + main)
     binary = Path(directory) / 'scheduling'
-    subprocess.run(['cc', '-Wall', '-Wno-deprecated-declarations', '-fsanitize=address,undefined',
-                    '-Ifirmware/main', '-I' + str(cjson), str(test),
-                    'firmware/main/pet_protocol.c', str(cjson / 'cJSON.c'), '-o', str(binary)], check=True)
-    subprocess.run([str(binary)], check=True)
+    for flags in ([], ['-DCONFIG_MBEDTLS_HAVE_TIME_DATE=1']):
+        subprocess.run(['cc', '-Wall', '-Wno-deprecated-declarations', '-fsanitize=address,undefined', *flags,
+                        '-Ifirmware/main', '-I' + str(cjson), str(test),
+                        'firmware/main/pet_protocol.c', str(cjson / 'cJSON.c'), '-o', str(binary)], check=True)
+        subprocess.run([str(binary)], check=True)

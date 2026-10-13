@@ -86,6 +86,8 @@ static void wifi_event(void *arg,esp_event_base_t base,int32_t id,void *data){
   ip_event_got_ip_t *ip=data;LOCK();state.wifi_channel=have_ap?ap.primary:0;state.wifi_rssi=have_ap?ap.rssi:0;state.wifi_connected=true;snprintf(state.ip,sizeof(state.ip),IPSTR,IP2STR(&ip->ip_info.ip));
   strlcpy(state.wifi_status,"Connected",sizeof(state.wifi_status));changed();UNLOCK();retries=0;ESP_LOGI(TAG,"Wi-Fi acquired an address");
  }else if(base==WIFI_EVENT&&id==WIFI_EVENT_STA_DISCONNECTED){
+  wifi_event_sta_disconnected_t *event=data;
+  ESP_LOGW(TAG,"Wi-Fi disconnected: reason=%u",event->reason);
   LOCK();state.wifi_connected=false;state.ip[0]=0;strlcpy(state.wifi_status,want_wifi?"Connection lost; retrying":"Wi-Fi off",sizeof(state.wifi_status));changed();UNLOCK();
   if(want_wifi&&retries++<5)esp_wifi_connect();else{LOCK();strlcpy(state.wifi_status,want_wifi?"Waiting for Wi-Fi; retrying":"Wi-Fi off",sizeof(state.wifi_status));changed();UNLOCK();}
  }else if(base==WIFI_EVENT&&id==WIFI_EVENT_AP_START){
@@ -172,7 +174,7 @@ static void worker(void *arg){
      if(err==ESP_OK)err=esp_wifi_sta_enterprise_enable();
     }
 #endif
-    wifi_config_t cfg={0};strlcpy((char*)cfg.sta.ssid,cmd.ssid,sizeof(cfg.sta.ssid));if(!enterprise)strlcpy((char*)cfg.sta.password,cmd.password,sizeof(cfg.sta.password));cfg.sta.pmf_cfg.capable=true;
+    wifi_config_t cfg={0};strlcpy((char*)cfg.sta.ssid,cmd.ssid,sizeof(cfg.sta.ssid));if(!enterprise)strlcpy((char*)cfg.sta.password,cmd.password,sizeof(cfg.sta.password));cfg.sta.pmf_cfg.capable=true;cfg.sta.sae_pwe_h2e=WPA3_SAE_PWE_BOTH;
     if(err==ESP_OK)err=esp_wifi_set_mode(ap_enabled?WIFI_MODE_APSTA:WIFI_MODE_STA);
     if(err==ESP_OK)err=esp_wifi_set_config(WIFI_IF_STA,&cfg);
     if(err==ESP_OK){

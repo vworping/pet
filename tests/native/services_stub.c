@@ -34,3 +34,5 @@ void test_hello_stage(pet_hello_stage_t stage){s.hello_stage=stage;s.revision++;
 void test_card_updated(void){s.card_stage=4;strcpy(s.card_status,"Updated. This card is ready to give.");s.revision++;}
 
 void pet_services_connect_enterprise(const char *n,const char *u,const char *p){(void)u;pet_services_connect(n,p);s.wifi_enterprise=true;}
+
+void test_service_status(const char *text){strlcpy(s.service_status,text,sizeof(s.service_status));s.revision++;}

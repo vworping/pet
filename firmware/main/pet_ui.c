@@ -343,6 +343,7 @@ static void render(void){
  }else if(current==WIFI){
   label("Wi-Fi",32,110,590,&pet_archivo_72,INK);
   lv_obj_t *connection=label(status.wifi_status,640,144,336,&pet_dm_24,GREEN);lv_obj_set_style_text_align(connection,LV_TEXT_ALIGN_RIGHT,0);
+  label(status.service_status,32,192,944,&pet_dm_18,MUTED);
   settings_control(status.scanning?"Scanning...":"Scan","",228,WIFI_SCAN,false);
   settings_control("Manual entry","",336,PASSWORD,false);
   settings_control("Wi-Fi off","",444,WIFI_OFF,false);
@@ -392,7 +393,7 @@ static void render(void){
   username=lv_textarea_create(screen);lv_obj_set_pos(username,32,215);lv_obj_set_size(username,460,58);lv_textarea_set_one_line(username,true);lv_textarea_set_max_length(username,127);lv_textarea_set_placeholder_text(username,"Full email / user@umb.edu");lv_obj_set_style_text_font(username,&pet_dm_24,0);if(!enterprise)lv_obj_add_flag(username,LV_OBJ_FLAG_HIDDEN);
   small_button(enterprise?"Username + password":"Password only",512,215,240,58,ENTERPRISE_TOGGLE,false);
   button("Connect",768,215,224,58,WIFI_CONNECT,true);
-  join_hint=label("Saved on this badge for reconnection.",32,282,960,&pet_dm_18,MUTED);
+  join_hint=label("2.4 GHz only. Browser sign-in needs venue help or a hotspot.",32,282,960,&pet_dm_18,MUTED);
   lv_obj_t *kb=lv_keyboard_create(screen);join_keyboard=kb;lv_obj_set_align(kb,LV_ALIGN_TOP_LEFT);lv_obj_set_pos(kb,20,316);lv_obj_set_size(kb,984,272);lv_keyboard_set_textarea(kb,chosen_ssid[0]?(enterprise?username:password):ssid_input);lv_obj_set_style_text_font(kb,&lv_font_montserrat_24,0);
   lv_obj_add_event_cb(ssid_input,focus_input,LV_EVENT_FOCUSED,kb);lv_obj_add_event_cb(password,focus_input,LV_EVENT_FOCUSED,kb);lv_obj_add_event_cb(username,focus_input,LV_EVENT_FOCUSED,kb);
 
@@ -413,7 +414,7 @@ static void poll(lv_timer_t *timer){
  if(next.revision!=last_revision){
   bool hello_change=next.hello_stage!=status.hello_stage||next.hello_starting!=status.hello_starting||next.hello_active!=status.hello_active||next.introduction_ready!=status.introduction_ready||next.phone_joined!=status.phone_joined||next.form_opened!=status.form_opened||strcmp(next.hello_error,status.hello_error)||strcmp(next.guest,status.guest)||strcmp(next.interest,status.interest)||next.card_stage!=status.card_stage||strcmp(next.card_status,status.card_status);
   bool opening_update=current==HELLO&&loading_caption&&status.hello_starting&&next.hello_starting&&!next.introduction_ready;
-  bool networks=next.wifi_channel!=status.wifi_channel||next.wifi_rssi!=status.wifi_rssi||strcmp(next.ip,status.ip)||next.wifi_connected!=status.wifi_connected||strcmp(next.ssid,status.ssid)||memcmp(next.networks,status.networks,sizeof(next.networks))||next.scanning!=status.scanning||next.network_count!=status.network_count||strcmp(next.wifi_status,status.wifi_status);
+  bool networks=next.wifi_channel!=status.wifi_channel||next.wifi_rssi!=status.wifi_rssi||strcmp(next.ip,status.ip)||next.wifi_connected!=status.wifi_connected||strcmp(next.ssid,status.ssid)||memcmp(next.networks,status.networks,sizeof(next.networks))||next.scanning!=status.scanning||next.network_count!=status.network_count||strcmp(next.wifi_status,status.wifi_status)||strcmp(next.service_status,status.service_status);
   bool count_changed=next.connections!=status.connections;
   bool motion=next.motion!=status.motion||next.save_power!=status.save_power;
   if(next.phone_joined!=status.phone_joined||next.form_opened!=status.form_opened)phase=0;

@@ -51,7 +51,8 @@ void pet_cloud_snapshot(pet_status_t *out){
  if(!mutex){return;}
  LOCK();out->revision+=view.revision;out->hello_stage=view.hello_stage;out->hello_starting=view.hello_starting;out->hello_active=view.hello_active;out->introduction_ready=view.introduction_ready;out->form_opened=view.form_opened;out->phone_joined=view.form_opened;
  strlcpy(out->hello_url,view.hello_url,sizeof(out->hello_url));strlcpy(out->hello_error,view.hello_error,sizeof(out->hello_error));strlcpy(out->guest,view.guest,sizeof(out->guest));strlcpy(out->interest,view.interest,sizeof(out->interest));
- out->card_stage=view.card_stage;out->pending_cards=saved.count;strlcpy(out->card_status,view.card_status,sizeof(out->card_status));strlcpy(out->card_id,view.card_id,sizeof(out->card_id));UNLOCK();
+ out->card_stage=view.card_stage;out->pending_cards=saved.count;strlcpy(out->card_status,view.card_status,sizeof(out->card_status));strlcpy(out->card_id,view.card_id,sizeof(out->card_id));
+ strlcpy(out->service_status,!out->wifi_connected?"Hello needs Wi-Fi.":!config.base[0]?"Hello needs setup over USB.":view.service_status[0]?view.service_status:"Checking Hello service...",sizeof(out->service_status));UNLOCK();
 }
 void pet_cloud_start(void){LOCK();if(request_cancel||(!view.hello_starting&&!view.hello_active&&!view.introduction_ready)){request_start=true;view.hello_starting=true;view.hello_stage=PET_HELLO_LINK;view.hello_active=false;view.introduction_ready=false;view.form_opened=false;view.hello_error[0]=0;changed();}UNLOCK();wake_worker();}
 void pet_cloud_cancel(void){LOCK();request_cancel=true;request_start=false;changed();UNLOCK();wake_worker();}
@@ -88,7 +89,10 @@ typedef struct {char bytes[2048];size_t used;} reply_t;
 static esp_http_client_handle_t http_client;
 static esp_err_t http_event(esp_http_client_event_t *e){if(e->event_id==HTTP_EVENT_ON_DATA){reply_t *r=e->user_data;if(e->data_len<0||r->used+(size_t)e->data_len>=sizeof(r->bytes))return ESP_FAIL;memcpy(r->bytes+r->used,e->data,e->data_len);r->used+=e->data_len;r->bytes[r->used]=0;}return ESP_OK;}
 static cJSON *http(const char *path,cJSON *body,int *status){
- *status=0;if(time(NULL)<1700000000)return NULL;
+ *status=0;
+#ifdef CONFIG_MBEDTLS_HAVE_TIME_DATE
+ if(time(NULL)<1700000000)return NULL;
+#endif
  config_t cfg;LOCK();cfg=config;UNLOCK();if(!cfg.base[0])return NULL;
  char url[240];snprintf(url,sizeof(url),"%s%s",cfg.base,path);reply_t *reply=calloc(1,sizeof(*reply));if(!reply)return NULL;
  esp_http_client_config_t hc={.url=url,.timeout_ms=8000,.crt_bundle_attach=esp_crt_bundle_attach,.event_handler=http_event,.user_data=reply,.disable_auto_redirect=true,.buffer_size=1024,.keep_alive_enable=true};
@@ -104,6 +108,13 @@ static cJSON *http(const char *path,cJSON *body,int *status){
  wifi_ps_type_t prior_ps=WIFI_PS_NONE;
  bool restore_ps=esp_wifi_get_ps(&prior_ps)==ESP_OK&&prior_ps!=WIFI_PS_NONE&&esp_wifi_set_ps(WIFI_PS_NONE)==ESP_OK;
  esp_err_t err=esp_http_client_perform(client);if(err==ESP_OK)*status=esp_http_client_get_status_code(client);cJSON *j=err==ESP_OK?cJSON_Parse(reply->bytes):NULL;
+ const char *detail=err!=ESP_OK?"Hello unreachable. Check venue sign-in or use a hotspot.":
+  *status==401||*status==403?"Hello access needs setup over USB.":
+  *status>=300&&*status<400?"Hello was redirected. Check venue sign-in or use a hotspot.":
+  *status>=500?"Hello service unavailable. Retrying.":
+  !j?"Unexpected Hello response. Check the network and retry.":"Hello service online.";
+ LOCK();if(strcmp(view.service_status,detail)){strlcpy(view.service_status,detail,sizeof(view.service_status));changed();}UNLOCK();
+ if(err!=ESP_OK)ESP_LOGW("pet_cloud","HTTPS failed: %s (errno=%d)",esp_err_to_name(err),esp_http_client_get_errno(client));
  if(restore_ps)esp_wifi_set_ps(prior_ps);
  esp_http_client_set_post_field(client,NULL,0);esp_http_client_set_user_data(client,NULL);
  if(err!=ESP_OK){esp_http_client_cleanup(client);http_client=NULL;}
@@ -126,7 +137,14 @@ static bool prepare_clock(bool connected,int64_t now){
   if(clock_running)esp_sntp_restart();else{esp_sntp_init();clock_running=true;}
   clock_retry_at=now+8000000;
  }
+ /* The shipped SDK verifies CA chains and hostnames without date checks.
+    Do not make otherwise-working HTTPS depend on venue UDP/123 access.
+    Builds that enable certificate dates must still wait for real time. */
+#ifdef CONFIG_MBEDTLS_HAVE_TIME_DATE
  return false;
+#else
+ return true;
+#endif
 }
 static void worker(void *arg){(void)arg;
  for(;;){
@@ -162,7 +180,7 @@ static void worker(void *arg){(void)arg;
       else{view.form_opened=cJSON_IsTrue(cJSON_GetObjectItem(r,"opened"));if(cJSON_IsTrue(cJSON_GetObjectItem(r,"expired"))){view.hello_active=false;view.hello_starting=false;saved.encounter[0]=0;persist();strlcpy(view.hello_error,"This Hello expired. Start a fresh one.",sizeof(view.hello_error));}
        if(cJSON_IsTrue(cJSON_GetObjectItem(r,"submitted"))){cJSON *name=cJSON_GetObjectItem(r,"name"),*topic=cJSON_GetObjectItem(r,"topic");if(cJSON_IsString(name)&&cJSON_IsString(topic)&&pet_text_valid(name->valuestring,40)&&pet_text_valid(topic->valuestring,80)){strlcpy(view.guest,name->valuestring,sizeof(view.guest));strlcpy(view.interest,topic->valuestring,sizeof(view.interest));view.introduction_ready=true;view.hello_starting=false;view.hello_active=false;message("Add this conversation to a business card.");cJSON *assigned=cJSON_GetObjectItem(r,"card_id");if(cJSON_IsString(assigned)&&valid_id(assigned->valuestring)){strlcpy(view.card_id,assigned->valuestring,sizeof(view.card_id));view.card_stage=4;message("Updated. This card is ready to give.");}for(unsigned k=0;k<saved.count;k++)if(!strcmp(saved.pending[k].encounter,encounter)){view.card_stage=saved.pending[k].blocked?5:3;strlcpy(view.card_id,saved.pending[k].card,sizeof(view.card_id));message(saved.pending[k].blocked?"Card needs attention in owner dashboard.":"Saved on PET. Waiting for internet confirmation.");}}}changed();}
      }else if(status==410){view.hello_active=false;view.hello_starting=false;saved.encounter[0]=0;persist();strlcpy(view.hello_error,"This Hello ended. Start a fresh one.",sizeof(view.hello_error));changed();}
-     else{view.hello_stage=PET_HELLO_RETRY;strlcpy(view.hello_error,status==403?"Badge access needs setup over USB.":"The link is taking a moment. Trying again.",sizeof(view.hello_error));changed();}
+     else{view.hello_stage=PET_HELLO_RETRY;strlcpy(view.hello_error,view.service_status[0]?view.service_status:"Hello unavailable. Check the network and retry.",sizeof(view.hello_error));changed();}
     }poll_at=esp_timer_get_time()+(create&&status==200?250000:1500000);UNLOCK();cJSON_Delete(r);
    }
    if(interactive_requested())continue;

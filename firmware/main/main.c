@@ -2,11 +2,12 @@
 #include "pet_ui.h"
 #include "pet_services.h"
 #include "esp_system.h"
+#include "esp_app_desc.h"
 #include "pet_rfid.h"
 
 void app_main(void)
 {
-    ESP_LOGI("pet", "[pet.] v6 connected badge boot; 1024x600 landscape");
+    ESP_LOGI("pet", "[pet.] %s connected badge boot; 1024x600 landscape", esp_app_get_description()->version);
     ESP_ERROR_CHECK(waveshare_esp32_s3_rgb_lcd_init());
     pet_services_init();
     if (lvgl_port_lock(-1)) {

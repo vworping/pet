@@ -272,6 +272,8 @@ static void console_poll(void) {
                 if(!strcmp(line,"pet-status")){ESP_LOGI(TAG,"WIFI STATUS=%s networks=%u scanning=%d",status.wifi_status,status.network_count,status.scanning);for(unsigned i=0;i<status.network_count;i++)ESP_LOGI(TAG,"NETWORK %s %d",status.networks[i].ssid,status.networks[i].rssi);}
                 if(status.hello_url[0])ESP_LOGI(TAG,"HELLO URL=%s",status.hello_url);
                 if(status.card_status[0])ESP_LOGI(TAG,"CARD STATUS=%s",status.card_status);
+                ESP_LOGI(TAG,"HELLO SERVICE=%s",status.service_status);
+                if(status.hello_error[0])ESP_LOGI(TAG,"HELLO ERROR=%s",status.hello_error);
                 memset(line,0,sizeof(line));used=0;overflow=false;continue;
             }
             char *uid = NULL, *url = NULL;
@@ -303,7 +305,9 @@ static void console_poll(void) {
 }
 static void worker(void *arg) {
     esp_err_t e=init_reader();
-    if(e!=ESP_OK){ESP_LOGE(TAG,"Reader initialization failed: %s",esp_err_to_name(e));vTaskDelete(NULL);return;}
+    bool reader_ready=e==ESP_OK;
+    int64_t reader_retry_at=esp_timer_get_time()+5000000;
+    if(!reader_ready)ESP_LOGE(TAG,"Reader initialization failed: %s; USB setup remains available",esp_err_to_name(e));
     usb_serial_jtag_driver_config_t cfg={.tx_buffer_size=256,.rx_buffer_size=256};
     bool console=usb_serial_jtag_driver_install(&cfg)==ESP_OK;
     if(!console)ESP_LOGW(TAG,"USB command input unavailable; reads only");
@@ -311,6 +315,15 @@ static void worker(void *arg) {
     for(;;) {
         if(console)console_poll();
         if(pending_uid[0] && esp_timer_get_time()>pending_until){pending_uid[0]=0;ESP_LOGW(TAG,"Write test expired");}
+        if(!reader_ready){
+            if(esp_timer_get_time()>=reader_retry_at){reader_ready=init_reader()==ESP_OK;reader_retry_at=esp_timer_get_time()+5000000;}
+            if(!reader_ready){
+                pet_cloud_card_error("NFC reader unavailable. Check its connection to PET.");
+                if(pet_cloud_clear_requested())pet_cloud_clear_result(false);
+                if(pending_uid[0]){pending_uid[0]=0;ESP_LOGW(TAG,"Reader unavailable; nothing written");}
+                vTaskDelay(pdMS_TO_TICKS(250));continue;
+            }
+        }
         card_t c;e=select_card(&c);
         if(e==ESP_OK) {
             char uid[21];uid_string(&c,uid);misses=0;

@@ -84,6 +84,6 @@ Coming later: enclosure files, print settings, and assembly notes. This first pa
 - [NFC hardware history](docs/NFC-HARDWARE.md)
 - [Third-party sources and licenses](docs/THIRD_PARTY.md)
 
-Current limits: the UMB eduroam profile still needs an on-campus connection test; the automatic blank-sticker flow still needs a physical card interaction check. No verified battery-voltage input is available. The latest Hello UI changes have native/browser checks but have not yet had a full device build and physical flash; see the dated verification notes above.
+Current limits: the UMB eduroam profile still needs an on-campus connection test; the automatic blank-sticker flow still needs a physical card interaction check. No verified battery-voltage input is available. See the [6.20261013.1 release verification](docs/RELEASE-6.20261013.1.md) for the current build, device, and website checks. Venue networks requiring browser sign-in need venue assistance or a permitted hotspot.
 
 No project-wide software license has been selected; third-party licenses remain applicable.

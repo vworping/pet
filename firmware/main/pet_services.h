@@ -19,6 +19,7 @@ typedef struct {
  unsigned card_stage, pending_cards;
  char card_status[112],card_id[33];
  char wifi_status[72], ssid[33], ip[16], ap_ssid[33], ap_password[17];
+ char service_status[80];
  char hello_error[80];
  char hello_url[128], guest[PET_NAME_SIZE], interest[PET_INTEREST_SIZE];
  pet_network_t networks[PET_NETWORKS];

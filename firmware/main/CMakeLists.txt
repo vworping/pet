@@ -6,7 +6,7 @@ file(GLOB PET_IMAGES "images/*.c")
 idf_component_register(
     SRCS "main.c" "pet_rfid.c" "pet_cloud.c" "pet_ndef.c" "pet_ui.c" "pet_constellation.c" "pet_services.c" "pet_enterprise.c" "pet_protocol.c" "pet_socket.c" "pet_qr.c" "pet_portal.c" "board/lvgl_port.c" "board/waveshare_rgb_lcd_port.c" ${PET_FONTS} ${PET_IMAGES}
     INCLUDE_DIRS "." "board" "fonts" "images"
-    REQUIRES wpa_supplicant esp_lcd driver esp_timer esp_wifi esp_netif esp_event nvs_flash esp_http_server esp_http_client mbedtls lwip json
+    REQUIRES esp_app_format wpa_supplicant esp_lcd driver esp_timer esp_wifi esp_netif esp_event nvs_flash esp_http_server esp_http_client mbedtls lwip json
     EMBED_FILES "guest.html")
 target_compile_definitions(${COMPONENT_LIB} PRIVATE LV_LVGL_H_INCLUDE_SIMPLE)
 if(CONFIG_PET_HELLO_SOAK_TEST)
